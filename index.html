@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <title>AI Kitob va Kompyuter Tanuvchi</title>
+    <style>
+        body { font-family: 'Arial', sans-serif; background-color: #f0f2f5; text-align: center; padding: 50px; }
+        .box { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); display: inline-block; }
+        h1 { color: #1a73e8; }
+        #webcam-container { margin: 20px 0; border: 5px solid #1a73e8; border-radius: 10px; display: inline-block; overflow: hidden; }
+        #label-container { font-size: 24px; font-weight: bold; color: #333; height: 50px; }
+        button { background-color: #1a73e8; color: white; border: none; padding: 15px 30px; font-size: 18px; border-radius: 5px; cursor: pointer; }
+        button:hover { background-color: #1557b0; }
+    </style>
+</head>
+<body>
+
+<div class="box">
+    <h1>Kitob & Kompyuter AI</h1>
+    <p>Kamerani yoqing va kitob yoki kompyuterni ko'rsating</p>
+    <button type="button" onclick="init()">Kamerani ishga tushirish</button>
+    <div id="webcam-container"></div>
+    <div id="label-container"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+
+<script type="text/javascript">
+    // SHU YERGA O'ZINGIZNING LINKINGIZNI QO'YING:
+    const URL = "https://teachablemachine.withgoogle.com/models/p5NPZaQX3/"; 
+
+    let model, webcam, labelContainer, maxPredictions;
+
+    async function init() {
+        const modelURL = URL + "model.json";
+        const metadataURL = URL + "metadata.json";
+        model = await tmImage.load(modelURL, metadataURL);
+        maxPredictions = model.getTotalClasses();
+
+        webcam = new tmImage.Webcam(400, 400, true);
+        await webcam.setup();
+        await webcam.play();
+        window.requestAnimationFrame(loop);
+
+        document.getElementById("webcam-container").appendChild(webcam.canvas);
+        labelContainer = document.getElementById("label-container");
+    }
+
+    async function loop() {
+        webcam.update();
+        await predict();
+        window.requestAnimationFrame(loop);
+    }
+
+    async function predict() {
+        const prediction = await model.predict(webcam.canvas);
+        // Eng yuqori ehtimollikni topamiz
+        let highProb = 0;
+        let bestName = "";
+
+        for (let i = 0; i < maxPredictions; i++) {
+            if (prediction[i].probability > highProb) {
+                highProb = prediction[i].probability;
+                bestName = prediction[i].className;
+            }
+        }
+        
+        labelContainer.innerHTML = bestName + ": " + (highProb * 100).toFixed(0) + "%";
+    }
+</script>
+</body>
+</html>
