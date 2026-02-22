@@ -159,25 +159,105 @@ model = await tmImage.load(modelURL, metadataURL);
     }
 
     async function predict() {
-        const prediction = await model.predict(webcam.canvas);
-        let highProb = 0;
-        let bestName = "";
+    const prediction = await model.predict(webcam.canvas);
+    let highProb = 0;
+    let bestName = "";
 
-        for (let i = 0; i < maxPredictions; i++) {
-            if (prediction[i].probability > highProb) {
-                highProb = prediction[i].probability;
-                bestName = prediction[i].className;
-            }
+    for (let i = 0; i < maxPredictions; i++) {
+        if (prediction[i].probability > highProb) {
+            highProb = prediction[i].probability;
+            bestName = prediction[i].className;
         }
-        
-        const percent = (highProb * 100).toFixed(0);
+    }
+
+    const percent = (highProb * 100).toFixed(0);
+    const labelContainer = document.getElementById("label-text");
+    const badge = document.getElementById("result-badge");
+
+    // MANA SHU YERDA FILTR QO'SHAMIZ:
+    // Agar AI kamida 85% ishonch bilan aytmasa, "Kitob" deb chiqarmaydi
+    if (highProb > 0.85) {
         labelContainer.innerHTML = bestName + " (" + percent + "%)";
         
-        const badge = document.getElementById("result-badge");
-        if(bestName === "Kitob") badge.style.color = "#818cf8";
-        else if(bestName === "Kompyuter") badge.style.color = "#c084fc";
-        else badge.style.color = "#94a3b8";
+        if (bestName === "Kitob") {
+            badge.style.color = "#818cf8";
+        } else if (bestName === "Kompyuter") {
+            badge.style.color = "#c084fc";
+        } else {
+            badge.style.color = "#94a3b8";
+        }
+    } else {
+        // Agar aniqlik past bo'lsa (boshqa narsa tushsa), shuni yozadi:
+        labelContainer.innerHTML = "Obyektni aniqroq ko'rsating...";
+        badge.style.color = "#64748b";
     }
+}async function predict() {
+    const prediction = await model.predict(webcam.canvas);
+    let highProb = 0;
+    let bestName = "";
+
+    for (let i = 0; i < maxPredictions; i++) {
+        if (prediction[i].probability > highProb) {
+            highProb = prediction[i].probability;
+            bestName = prediction[i].className;
+        }
+    }
+
+    const percent = (highProb * 100).toFixed(0);
+    const labelContainer = document.getElementById("label-text");
+    const badge = document.getElementById("result-badge");
+
+    // MANA SHU YERDA FILTR QO'SHAMIZ:
+    // Agar AI kamida 85% ishonch bilan aytmasa, "Kitob" deb chiqarmaydi
+    if (highProb > 0.85) {
+        labelContainer.innerHTML = bestName + " (" + percent + "%)";
+        
+        if (bestName === "Kitob") {
+            badge.style.color = "#818cf8";
+        } else if (bestName === "Kompyuter") {
+            badge.style.color = "#c084fc";
+        } else {
+            badge.style.color = "#94a3b8";
+        }
+    } else {
+        // Agar aniqlik past bo'lsa (boshqa narsa tushsa), shuni yozadi:
+        labelContainer.innerHTML = "Obyektni aniqroq ko'rsating...";
+        badge.style.color = "#64748b";
+    }
+}async function predict() {
+    const prediction = await model.predict(webcam.canvas);
+    let highProb = 0;
+    let bestName = "";
+
+    for (let i = 0; i < maxPredictions; i++) {
+        if (prediction[i].probability > highProb) {
+            highProb = prediction[i].probability;
+            bestName = prediction[i].className;
+        }
+    }
+
+    const percent = (highProb * 100).toFixed(0);
+    const labelContainer = document.getElementById("label-text");
+    const badge = document.getElementById("result-badge");
+
+    // MANA SHU YERDA FILTR QO'SHAMIZ:
+    // Agar AI kamida 85% ishonch bilan aytmasa, "Kitob" deb chiqarmaydi
+    if (highProb > 0.85) {
+        labelContainer.innerHTML = bestName + " (" + percent + "%)";
+        
+        if (bestName === "Kitob") {
+            badge.style.color = "#818cf8";
+        } else if (bestName === "Kompyuter") {
+            badge.style.color = "#c084fc";
+        } else {
+            badge.style.color = "#94a3b8";
+        }
+    } else {
+        // Agar aniqlik past bo'lsa (boshqa narsa tushsa), shuni yozadi:
+        labelContainer.innerHTML = "Obyektni aniqroq ko'rsating...";
+        badge.style.color = "#64748b";
+    }
+}v
 </script>
 </body>
 </html>
