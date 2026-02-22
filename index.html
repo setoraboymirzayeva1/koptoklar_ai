@@ -1,3 +1,4 @@
+Sitora✨, [22.02.2026 12:28]
 <!DOCTYPE html>
 <html lang="uz">
 <head>
@@ -66,6 +67,7 @@
             border-radius: 12px;
             background: rgba(255, 255, 255, 0.05);
             min-height: 40px;
+            transition: 0.3s;
         }
 
         button {
@@ -119,7 +121,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
 
 <script type="text/javascript">
-    // SIZNING MODELINGIZ HAVOLASI
     const URL = "https://teachablemachine.withgoogle.com/models/p5NPZaQX3/";
 
     let model, webcam, labelContainer, maxPredictions;
@@ -132,6 +133,7 @@
             const modelURL = URL + "model.json";
             const metadataURL = URL + "metadata.json";
 
+Sitora✨, [22.02.2026 12:28]
 model = await tmImage.load(modelURL, metadataURL);
             maxPredictions = model.getTotalClasses();
 
@@ -159,105 +161,36 @@ model = await tmImage.load(modelURL, metadataURL);
     }
 
     async function predict() {
-    const prediction = await model.predict(webcam.canvas);
-    let highProb = 0;
-    let bestName = "";
+        const prediction = await model.predict(webcam.canvas);
+        let highProb = 0;
+        let bestName = "";
 
-    for (let i = 0; i < maxPredictions; i++) {
-        if (prediction[i].probability > highProb) {
-            highProb = prediction[i].probability;
-            bestName = prediction[i].className;
+        for (let i = 0; i < maxPredictions; i++) {
+            if (prediction[i].probability > highProb) {
+                highProb = prediction[i].probability;
+                bestName = prediction[i].className;
+            }
         }
-    }
 
-    const percent = (highProb * 100).toFixed(0);
-    const labelContainer = document.getElementById("label-text");
-    const badge = document.getElementById("result-badge");
+        const percent = (highProb * 100).toFixed(0);
+        const labelContainer = document.getElementById("label-text");
+        const badge = document.getElementById("result-badge");
 
-    // MANA SHU YERDA FILTR QO'SHAMIZ:
-    // Agar AI kamida 85% ishonch bilan aytmasa, "Kitob" deb chiqarmaydi
-    if (highProb > 0.85) {
+        // Natijani doimiy va tezkor chiqarish
         labelContainer.innerHTML = bestName + " (" + percent + "%)";
         
+        // Ranglarni vizual boshqarish
         if (bestName === "Kitob") {
             badge.style.color = "#818cf8";
+            badge.style.textShadow = "0 0 10px rgba(129, 140, 248, 0.5)";
         } else if (bestName === "Kompyuter") {
             badge.style.color = "#c084fc";
+            badge.style.textShadow = "0 0 10px rgba(192, 132, 252, 0.5)";
         } else {
-            badge.style.color = "#94a3b8";
-        }
-    } else {
-        // Agar aniqlik past bo'lsa (boshqa narsa tushsa), shuni yozadi:
-        labelContainer.innerHTML = "Obyektni aniqroq ko'rsating...";
-        badge.style.color = "#64748b";
-    }
-}async function predict() {
-    const prediction = await model.predict(webcam.canvas);
-    let highProb = 0;
-    let bestName = "";
-
-    for (let i = 0; i < maxPredictions; i++) {
-        if (prediction[i].probability > highProb) {
-            highProb = prediction[i].probability;
-            bestName = prediction[i].className;
+            badge.style.color = "#4ade80"; // Boshqa obyektlar uchun yashil
+            badge.style.textShadow = "0 0 10px rgba(74, 222, 128, 0.5)";
         }
     }
-
-    const percent = (highProb * 100).toFixed(0);
-    const labelContainer = document.getElementById("label-text");
-    const badge = document.getElementById("result-badge");
-
-    // MANA SHU YERDA FILTR QO'SHAMIZ:
-    // Agar AI kamida 85% ishonch bilan aytmasa, "Kitob" deb chiqarmaydi
-    if (highProb > 0.85) {
-        labelContainer.innerHTML = bestName + " (" + percent + "%)";
-        
-        if (bestName === "Kitob") {
-            badge.style.color = "#818cf8";
-        } else if (bestName === "Kompyuter") {
-            badge.style.color = "#c084fc";
-        } else {
-            badge.style.color = "#94a3b8";
-        }
-    } else {
-        // Agar aniqlik past bo'lsa (boshqa narsa tushsa), shuni yozadi:
-        labelContainer.innerHTML = "Obyektni aniqroq ko'rsating...";
-        badge.style.color = "#64748b";
-    }
-}async function predict() {
-    const prediction = await model.predict(webcam.canvas);
-    let highProb = 0;
-    let bestName = "";
-
-    for (let i = 0; i < maxPredictions; i++) {
-        if (prediction[i].probability > highProb) {
-            highProb = prediction[i].probability;
-            bestName = prediction[i].className;
-        }
-    }
-
-    const percent = (highProb * 100).toFixed(0);
-    const labelContainer = document.getElementById("label-text");
-    const badge = document.getElementById("result-badge");
-
-    // MANA SHU YERDA FILTR QO'SHAMIZ:
-    // Agar AI kamida 85% ishonch bilan aytmasa, "Kitob" deb chiqarmaydi
-    if (highProb > 0.85) {
-        labelContainer.innerHTML = bestName + " (" + percent + "%)";
-        
-        if (bestName === "Kitob") {
-            badge.style.color = "#818cf8";
-        } else if (bestName === "Kompyuter") {
-            badge.style.color = "#c084fc";
-        } else {
-            badge.style.color = "#94a3b8";
-        }
-    } else {
-        // Agar aniqlik past bo'lsa (boshqa narsa tushsa), shuni yozadi:
-        labelContainer.innerHTML = "Obyektni aniqroq ko'rsating...";
-        badge.style.color = "#64748b";
-    }
-}v
 </script>
 </body>
 </html>
