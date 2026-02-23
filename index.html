@@ -1,30 +1,131 @@
 <!DOCTYPE html>
 <html lang="uz">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ML Tasniflash Demo</title>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Vision System</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0b0e14;
+            display: flex; justify-content: center; align-items: center;
+            height: 100vh; font-family: 'Segoe UI', sans-serif; color: white;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 35px;
+            padding: 40px; width: 450px; text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+        h2 { font-size: 26px; margin-bottom: 5px; }
+        .desc { color: rgba(255,255,255,0.5); font-size: 13px; margin-bottom: 25px; }
+        
+        #webcam-box {
+            width: 280px; height: 280px; margin: 0 auto 20px;
+            border-radius: 20px; overflow: hidden;
+            background: #000; border: 2px solid rgba(255,255,255,0.1);
+            display: none;
+        }
+        canvas { transform: scaleX(-1); width: 100% !important; height: 100% !important; }
+
+        .btn-start {
+            background: linear-gradient(90deg, #6366f1, #a855f7);
+            color: white; border: none; padding: 15px 35px;
+            border-radius: 14px; font-size: 17px; font-weight: 600;
+            cursor: pointer; width: 100%; transition: 0.3s;
+        }
+        .btn-start:hover { transform: scale(1.02); box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3); }
+        
+        .btn-stop {
+            background: rgba(255,255,255,0.1); color: #ff4d4d;
+            border: 1px solid rgba(255,77,77,0.3); padding: 12px;
+            border-radius: 12px; margin-top: 15px; width: 100%;
+            cursor: pointer; display: none;
+        }
+
+        .prediction-panel { margin-top: 25px; text-align: left; display: none; }
+        .row { margin-bottom: 12px; }
+        .info { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 5px; }
+        .track { background: rgba(255,255,255,0.1); height: 8px; border-radius: 4px; overflow: hidden; }
+        .fill { height: 100%; width: 0%; transition: 0.3s; }
+        
+        .bar-0 { background: #fbbf24; } /* Futbol */
+        .bar-1 { background: #f87171; } /* Tennis */
+        .bar-2 { background: #3b82f6; } /* Boshqa */
+    </style>
 </head>
 <body>
 
-  <div class="container">
-    <h1>📸 Teachable Machine & Webcam AI</h1>
+<div class="glass-card">
+    <h2>AI Vision System</h2>
+    <p class="desc">Futbol va Tennis koptoklarini aniqlash skaneri</p>
 
-    <!-- Video oynasi -->
-    <div id="webcam-container"></div>
+    <div id="webcam-box"></div>
 
-    <!-- Natija -->
-    <div id="label-container"></div>
+    <button id="start-btn" class="btn-start" onclick="run()">Kamerani Yoqish</button>
+    <button id="stop-btn" class="btn-stop" onclick="stop()">Kamerani O'chirish</button>
 
-    <!-- Yuklash tugmasi -->
-    <button id="start-btn">Start Camera</button>
-  </div>
+    <div id="panel" class="prediction-panel"></div>
+</div>
 
-  <!-- TensorFlow.js va Teachable Machine script -->
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+<script>
+    const URL = "https://teachablemachine.withgoogle.com/models/YJ_i_Ueih/";
+    let model, webcam, panel, isRunning = false;
 
-  <script src="script.js"></script>
+    async function run() {
+        try {
+            document.getElementById("start-btn").innerText = "Yuklanmoqda...";
+            model = await tmImage.load(URL + "model.json", URL + "metadata.json");
+            
+            webcam = new tmImage.Webcam(280, 280, true);
+            await webcam.setup(); // Kamera ruxsatini so'raydi
+            await webcam.play();
+            
+            isRunning = true;
+            document.getElementById("webcam-box").style.display = "block";
+            document.getElementById("start-btn").style.display = "none";
+            document.getElementById("stop-btn").style.display = "block";
+            document.getElementById("panel").style.display = "block";
+            document.getElementById("webcam-box").appendChild(webcam.canvas);
+
+panel = document.getElementById("panel");
+            panel.innerHTML = "";
+            for (let i = 0; i < model.getTotalClasses(); i++) {
+                panel.innerHTML += 
+                    <div class="row">
+                        <div class="info"><span>${model.getClassLabels()[i]}</span><span id="p${i}">0%</span></div>
+                        <div class="track"><div id="b${i}" class="fill bar-${i}"></div></div>
+                    </div>;
+            }
+            window.requestAnimationFrame(loop);
+        } catch (e) {
+            alert("XATO: Kamera ishlamadi! Iltimos, sayt manzilini HTTPS ekanligini va kameraga ruxsat berganingizni tekshiring.");
+            document.getElementById("start-btn").innerText = "Kamerani Yoqish";
+        }
+    }
+
+    async function loop() {
+        if (isRunning) {
+            webcam.update();
+            const pred = await model.predict(webcam.canvas);
+            for (let i = 0; i < model.getTotalClasses(); i++) {
+                const val = (pred[i].probability * 100).toFixed(0);
+                document.getElementById(b${i}).style.width = val + "%";
+                document.getElementById(p${i}).innerText = val + "%";
+            }
+            window.requestAnimationFrame(loop);
+        }
+    }
+
+    function stop() {
+        isRunning = false;
+        if (webcam) webcam.stop();
+        location.reload(); // Hammasini tozalab boshiga qaytaradi
+    }
+</script>
 </body>
 </html>
