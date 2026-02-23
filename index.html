@@ -6,61 +6,71 @@
     <title>AI Koptok Detektor</title>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+    
     <style>
         :root {
             --primary: #4285f4;
             --success: #34a853;
             --danger: #ea4335;
-            --bg: #f8f9fa;
+            --warning: #fbbc05;
+            --card-bg: #ffffff;
+            --body-bg: #f8f9fa;
         }
 
         body {
-            font-family: 'Google Sans', Arial, sans-serif;
-            background-color: var(--bg);
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--body-bg);
             margin: 0;
             display: flex;
-            flex-direction: column;
-            align-items: center;
             justify-content: center;
+            align-items: center;
             min-height: 100vh;
         }
 
-        .container {
-            background: white;
-            padding: 2rem;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        .main-card {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 24px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+            width: 100%;
+            max-width: 450px;
             text-align: center;
-            width: 90%;
-            max-width: 500px;
         }
 
-        h2 { color: #3c4043; margin-bottom: 1.5rem; }
+        h2 { color: #3c4043; font-size: 24px; margin-bottom: 20px; }
 
+        /* Kamera oynasi */
         #webcam-wrapper {
             position: relative;
             width: 320px;
             height: 320px;
-            margin: 0 auto 1.5rem;
-            background: #e8eaed;
-            border-radius: 15px;
+            margin: 0 auto 25px;
+            background: #202124;
+            border-radius: 16px;
             overflow: hidden;
-            border: 4px solid #fff;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            border: 6px solid #fff;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
         canvas { transform: scaleX(-1); width: 100% !important; height: 100% !important; }
 
-        .controls { display: flex; gap: 10px; justify-content: center; margin-bottom: 2rem; }
+        /* Tugmalar */
+        .btn-group { display: flex; gap: 12px; justify-content: center; margin-bottom: 25px; }
 
         button {
-            padding: 12px 24px;
-            font-size: 15px;
+            padding: 14px 28px;
+            font-size: 16px;
             font-weight: 600;
             border: none;
-            border-radius: 8px;
+            border-radius: 12px;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .btn-start { background: var(--primary); color: white; }
@@ -69,94 +79,134 @@
         .btn-stop { background: var(--danger); color: white; display: none; }
         .btn-stop:hover { background: #d93025; transform: translateY(-2px); }
 
-        #results { text-align: left; background: #f1f3f4; padding: 15px; border-radius: 12px; }
+        /* Natijalar paneli */
+        #results-panel {
+            background: #f1f3f4;
+            border-radius: 16px;
+            padding: 20px;
+            text-align: left;
+        }
 
-        .class-row { margin-bottom: 12px; }
-        .class-info { display: flex; justify-content: space-between; margin-bottom: 5px; font-weight: 500; }
-        
-        .progress-bg {
+        .prediction-row { margin-bottom: 15px; }
+        .prediction-row:last-child { margin-bottom: 0; }
+
+        .label-text {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: #3c4043;
+            font-size: 14px;
+        }
+
+        .progress-bar-container {
             background: #dadce0;
-            height: 12px;
-            border-radius: 6px;
+            height: 10px;
+            border-radius: 5px;
             overflow: hidden;
         }
 
-        .progress-fill {
+        .progress-bar-fill {
             height: 100%;
             width: 0%;
-            transition: width 0.2s ease-out;
+            transition: width 0.3s ease;
+            border-radius: 5px;
         }
 
-        /* Klasslar ranglari */
-        .color-0 { background: #fabd05; } /* Futbol */
-        .color-1 { background: #34a853; } /* Tennis */
-        .color-2 { background: #4285f4; } /* Boshqa */
+        /* Har xil ranglar */
+        .color-0 { background: var(--warning); } /* Futbol */
+        .color-1 { background: var(--success); } /* Tennis */
+        .color-2 { background: var(--primary); } /* Boshqa */
+
+        #status-msg { color: #70757a; font-size: 14px; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>AI Koptok Tanuvchi</h2>
+<div class="main-card">
+    <h2>AI Koptok Detektori</h2>
     
     <div id="webcam-wrapper">
-        <div id="webcam-container"></div>
+        <div id="webcam-container">
+            <span id="status-msg">Kamera kutilmoqda...</span>
+        </div>
     </div>
 
-    <div class="controls">
-        <button id="start-btn" class="btn-start" onclick="start()">Kamerani Yoqish</button>
-        <button id="stop-btn" class="btn-stop" onclick="stop()">Kamerani O'chirish</button>
+<div class="btn-group">
+        <button id="start-btn" class="btn-start" onclick="init()">
+            <span>▶</span> Kamerani Yoqish
+        </button>
+        <button id="stop-btn" class="btn-stop" onclick="stopWebcam()">
+            <span>■</span> O'chirish
+        </button>
     </div>
 
-    <div id="results">
+    <div id="results-panel">
         <div id="label-container">
-            <p style="text-align:center; color: #70757a;">Kamerani yoqing...</p>
+            <p style="text-align:center; margin:0; color:#5f6368;">Tahlilni boshlash uchun kamerani yoqing</p>
         </div>
     </div>
 </div>
 
 <script>
-    const MODEL_URL = "https://teachablemachine.withgoogle.com/models/YJ_i_Ueih/";
+    // Teachable Machine modelingiz manzili
+    const URL = "https://teachablemachine.withgoogle.com/models/YJ_i_Ueih/";
+
     let model, webcam, labelContainer, maxPredictions;
     let isRunning = false;
 
-    async function start() {
-        document.getElementById("start-btn").innerText = "Yuklanmoqda...";
-        document.getElementById("start-btn").disabled = true;
+    async function init() {
+        try {
+            document.getElementById("start-btn").innerText = "Yuklanmoqda...";
+            document.getElementById("start-btn").disabled = true;
 
-        model = await tmImage.load(MODEL_URL + "model.json", MODEL_URL + "metadata.json");
-        maxPredictions = model.getTotalClasses();
-        
-webcam = new tmImage.Webcam(320, 320, true);
-        await webcam.setup();
-        await webcam.play();
-        
-        isRunning = true;
-        document.getElementById("start-btn").style.display = "none";
-        document.getElementById("stop-btn").style.display = "inline-block";
-        document.getElementById("webcam-container").appendChild(webcam.canvas);
-        
-        labelContainer = document.getElementById("label-container");
-        labelContainer.innerHTML = "";
-        for (let i = 0; i < maxPredictions; i++) {
-            const row = document.createElement("div");
-            row.className = "class-row";
-            row.innerHTML = 
-                <div class="class-info">
-                    <span>${model.getClassLabels()[i]}</span>
-                    <span id="percent-${i}">0%</span>
-                </div>
-                <div class="progress-bg">
-                    <div id="bar-${i}" class="progress-fill color-${i}"></div>
-                </div>
-            ;
-            labelContainer.appendChild(row);
+            // Modelni yuklash
+            model = await tmImage.load(URL + "model.json", URL + "metadata.json");
+            maxPredictions = model.getTotalClasses();
+
+            // Kamerani sozlash
+            const flip = true; 
+            webcam = new tmImage.Webcam(320, 320, flip); 
+            await webcam.setup(); 
+            await webcam.play();
+            
+            isRunning = true;
+            document.getElementById("status-msg").style.display = "none";
+            document.getElementById("start-btn").style.display = "none";
+            document.getElementById("stop-btn").style.display = "flex";
+            
+            document.getElementById("webcam-container").appendChild(webcam.canvas);
+            
+            // Natijalar strukturasini yaratish
+            labelContainer = document.getElementById("label-container");
+            labelContainer.innerHTML = "";
+            for (let i = 0; i < maxPredictions; i++) {
+                const row = document.createElement("div");
+                row.className = "prediction-row";
+                row.innerHTML = 
+                    <div class="label-text">
+                        <span>${model.getClassLabels()[i]}</span>
+                        <span id="percent-${i}">0%</span>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div id="bar-${i}" class="progress-bar-fill color-${i}"></div>
+                    </div>
+                ;
+                labelContainer.appendChild(row);
+            }
+            
+            window.requestAnimationFrame(loop);
+        } catch (e) {
+            console.error(e);
+            alert("Kameraga ruxsat berilmadi yoki model yuklanmadi. HTTPS manzilidan foydalanayotganingizga ishonch hosil qiling.");
+            document.getElementById("start-btn").disabled = false;
+            document.getElementById("start-btn").innerText = "Kamerani Yoqish";
         }
-        window.requestAnimationFrame(loop);
     }
 
     async function loop() {
         if (!isRunning) return;
-        webcam.update();
+        webcam.update(); 
         await predict();
         window.requestAnimationFrame(loop);
     }
@@ -170,13 +220,15 @@ webcam = new tmImage.Webcam(320, 320, true);
         }
     }
 
-    function stop() {
+    function stopWebcam() {
         isRunning = false;
-        if (webcam) webcam.stop();
-        document.getElementById("webcam-container").innerHTML = "";
-        document.getElementById("label-container").innerHTML = '<p style="text-align:center; color: #70757a;">Kamera o\'chirildi.</p>';
+        if (webcam) {
+            webcam.stop();
+        }
+        document.getElementById("webcam-container").innerHTML = '<span id="status-msg">Kamera o\'chirildi</span>';
+        document.getElementById("label-container").innerHTML = '<p style="text-align:center; margin:0; color:#5f6368;">Tahlil to\'xtatildi</p>';
         document.getElementById("stop-btn").style.display = "none";
-        document.getElementById("start-btn").style.display = "inline-block";
+        document.getElementById("start-btn").style.display = "flex";
         document.getElementById("start-btn").disabled = false;
         document.getElementById("start-btn").innerText = "Kamerani Yoqish";
     }
