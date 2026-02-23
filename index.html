@@ -3,156 +3,163 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Smart Vision | Kitob va Kompyuter</title>
+    <title>AI Vision System</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
     <style>
-        :root {
-            --primary: #6366f1;
-            --secondary: #a855f7;
-            --bg: #0f172a;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
         body {
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            background-color: var(--bg);
-            color: white;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            font-family: 'Segoe UI', sans-serif;
             display: flex;
-            flex-direction: column;
-            align-items: center;
             justify-content: center;
-            min-height: 100vh;
-            margin: 0;
+            align-items: center;
+            height: 100vh;
+            color: white;
         }
 
-        .container {
-            background: rgba(30, 41, 59, 0.8);
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
             backdrop-filter: blur(15px);
-            padding: 2.5rem;
-            border-radius: 24px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
             border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 30px;
+            padding: 40px;
+            width: 450px;
             text-align: center;
-            max-width: 450px;
-            width: 90%;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.3);
         }
 
-        h1 {
-            font-size: 1.8rem;
-            background: linear-gradient(to right, #818cf8, #c084fc);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 1rem;
-        }
+        h2 { font-size: 28px; font-weight: 700; margin-bottom: 10px; color: #fff; }
+        p { color: rgba(255,255,255,0.7); font-size: 14px; margin-bottom: 30px; }
 
         #webcam-container {
-            margin: 1.5rem 0;
-            border-radius: 16px;
+            width: 300px;
+            height: 300px;
+            margin: 0 auto 20px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 20px;
             overflow: hidden;
-            border: 3px solid var(--primary);
-            box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
-            background: #000;
-            line-height: 0;
+            border: 2px solid rgba(255,255,255,0.1);
+            display: none; /* Kamera yoqilguncha yopiq bo'ladi */
         }
 
-        canvas {
-            width: 100% !important;
-            height: auto !important;
-        }
+        canvas { width: 100% !important; height: 100% !important; transform: scaleX(-1); }
 
-        #result-badge {
-            font-size: 1.4rem;
-            font-weight: bold;
-            padding: 1rem;
-            margin-top: 1rem;
-            border-radius: 12px;
-            background: rgba(255, 255, 255, 0.05);
-            min-height: 40px;
-            transition: 0.3s;
-        }
-
-        button {
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
+        .btn-start {
+            background: linear-gradient(90deg, #7b61ff 0%, #a855f7 100%);
             color: white;
             border: none;
-            padding: 14px 30px;
-            font-size: 1.1rem;
-            font-weight: 600;
+            padding: 15px 40px;
             border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
             cursor: pointer;
+            transition: 0.3s;
+            box-shadow: 0 10px 20px rgba(123, 97, 255, 0.3);
+            width: 100%;
+        }
+
+        .btn-start:hover { transform: translateY(-3px); box-shadow: 0 15px 25px rgba(123, 97, 255, 0.4); }
+
+        .btn-stop {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 12px;
+            border-radius: 12px;
+            margin-top: 15px;
+            cursor: pointer;
+            width: 100%;
+            display: none;
+        }
+
+        .results {
+            margin-top: 25px;
+            text-align: left;
+            display: none;
+        }
+
+        .bar-row { margin-bottom: 15px; }
+        .label { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 13px; }
+        
+        .progress-bg {
+            background: rgba(255,255,255,0.1);
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: #7b61ff;
             transition: 0.3s;
         }
 
-        button:hover {
-            transform: scale(1.05);
-            box-shadow: 0 0 15px rgba(168, 85, 247, 0.5);
-        }
-
-        .loader {
-            display: none;
-            margin: 10px auto;
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid var(--secondary);
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        #loading { margin-top: 15px; font-size: 14px; color: #a855f7; display: none; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h1>AI Vision System</h1>
-    <p style="color: #94a3b8; margin-bottom: 20px;">Kitob va Kompyuterni aniqlash skaneri</p>
-    
-    <button id="start-btn" type="button" onclick="init()">Kamerani Yoqish</button>
-    <div id="loader" class="loader"></div>
-    
+<div class="glass-card">
+    <h2>AI Vision System</h2>
+    <p>Futbol va Tennis koptoklarini aniqlash</p>
+
     <div id="webcam-container"></div>
-    
-    <div id="result-badge">
-        <span id="label-text">Kamerani kuting...</span>
-    </div>
+    <div id="loading">Kamera kutilmoqda...</div>
+
+    <button id="start-btn" class="btn-start" onclick="init()">Kamerani Yoqish</button>
+    <button id="stop-btn" class="btn-stop" onclick="stopWebcam()">Kamerani O'chirish</button>
+
+    <div id="results" class="results">
+        </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
-
-<script type="text/javascript">
-    const URL = "https://teachablemachine.withgoogle.com/models/p5NPZaQX3/";
-
+<script>
+    const URL = "https://teachablemachine.withgoogle.com/models/YJ_i_Ueih/";
     let model, webcam, labelContainer, maxPredictions;
+    let isRunning = false;
 
     async function init() {
         document.getElementById("start-btn").style.display = "none";
-        document.getElementById("loader").style.display = "block";
+        document.getElementById("loading").style.display = "block";
+
+model = await tmImage.load(URL + "model.json", URL + "metadata.json");
+        maxPredictions = model.getTotalClasses();
+
+        webcam = new tmImage.Webcam(300, 300, true);
+        await webcam.setup();
+        await webcam.play();
         
-        try {
-            const modelURL = URL + "model.json";
-            const metadataURL = URL + "metadata.json";
+        isRunning = true;
+        document.getElementById("loading").style.display = "none";
+        document.getElementById("webcam-container").style.display = "block";
+        document.getElementById("stop-btn").style.display = "block";
+        document.getElementById("results").style.display = "block";
+        document.getElementById("webcam-container").appendChild(webcam.canvas);
 
-model = await tmImage.load(modelURL, metadataURL);
-            maxPredictions = model.getTotalClasses();
-
-            const flip = true; 
-            webcam = new tmImage.Webcam(400, 400, flip); 
-            await webcam.setup(); 
-            await webcam.play();
-            
-            document.getElementById("loader").style.display = "none";
-            window.requestAnimationFrame(loop);
-
-            document.getElementById("webcam-container").appendChild(webcam.canvas);
-            labelContainer = document.getElementById("label-text");
-        } catch (e) {
-            alert("Kameraga ruxsat berilmadi yoki model yuklanmadi!");
-            document.getElementById("start-btn").style.display = "inline-block";
-            document.getElementById("loader").style.display = "none";
+        labelContainer = document.getElementById("results");
+        labelContainer.innerHTML = "";
+        for (let i = 0; i < maxPredictions; i++) {
+            const row = document.createElement("div");
+            row.className = "bar-row";
+            row.innerHTML = 
+                <div class="label">
+                    <span>${model.getClassLabels()[i]}</span>
+                    <span id="percent-${i}">0%</span>
+                </div>
+                <div class="progress-bg">
+                    <div id="bar-${i}" class="progress-fill"></div>
+                </div>
+            ;
+            labelContainer.appendChild(row);
         }
+        window.requestAnimationFrame(loop);
     }
 
     async function loop() {
+        if (!isRunning) return;
         webcam.update();
         await predict();
         window.requestAnimationFrame(loop);
@@ -160,35 +167,27 @@ model = await tmImage.load(modelURL, metadataURL);
 
     async function predict() {
         const prediction = await model.predict(webcam.canvas);
-        let highProb = 0;
-        let bestName = "";
-
         for (let i = 0; i < maxPredictions; i++) {
-            if (prediction[i].probability > highProb) {
-                highProb = prediction[i].probability;
-                bestName = prediction[i].className;
-            }
-        }
-
-        const percent = (highProb * 100).toFixed(0);
-        const labelContainer = document.getElementById("label-text");
-        const badge = document.getElementById("result-badge");
-
-        // Natijani doimiy va tezkor chiqarish
-        labelContainer.innerHTML = bestName + " (" + percent + "%)";
-        
-        // Ranglarni vizual boshqarish
-        if (bestName === "Kitob") {
-            badge.style.color = "#818cf8";
-            badge.style.textShadow = "0 0 10px rgba(129, 140, 248, 0.5)";
-        } else if (bestName === "Kompyuter") {
-            badge.style.color = "#c084fc";
-            badge.style.textShadow = "0 0 10px rgba(192, 132, 252, 0.5)";
-        } else {
-            badge.style.color = "#4ade80"; // Boshqa obyektlar uchun yashil
-            badge.style.textShadow = "0 0 10px rgba(74, 222, 128, 0.5)";
+            const prob = (prediction[i].probability * 100).toFixed(0);
+            document.getElementById(bar-${i}).style.width = prob + "%";
+            document.getElementById(percent-${i}).innerText = prob + "%";
+            
+            // Eng yuqori natijani rang bilan ajratish
+            if (prob > 70) document.getElementById(bar-${i}).style.background = "#34a853";
+            else document.getElementById(bar-${i}).style.background = "#7b61ff";
         }
     }
+
+    function stopWebcam() {
+        isRunning = false;
+        if (webcam) webcam.stop();
+        document.getElementById("webcam-container").style.display = "none";
+        document.getElementById("results").style.display = "none";
+        document.getElementById("stop-btn").style.display = "none";
+        document.getElementById("start-btn").style.display = "block";
+        document.getElementById("webcam-container").innerHTML = "";
+    }
 </script>
+
 </body>
 </html>
