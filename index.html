@@ -1,211 +1,30 @@
 <!DOCTYPE html>
 <html lang="uz">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Vision System - Koptoklar</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
-        body {
-            background: #0f172a; /* To'q ko'k fon */
-            background-image: radial-gradient(circle at 50% 50%, #1e293b 0%, #0f172a 100%);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            overflow: hidden;
-        }
-
-        .glass-container {
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 40px;
-            padding: 40px;
-            width: 90%;
-            max-width: 500px;
-            text-align: center;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-        }
-
-        h1 { color: #fff; font-size: 32px; margin-bottom: 8px; font-weight: 700; }
-        .subtitle { color: rgba(255, 255, 255, 0.6); margin-bottom: 30px; font-size: 14px; }
-
-        #webcam-wrapper {
-            width: 300px;
-            height: 300px;
-            margin: 0 auto 30px;
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 24px;
-            overflow: hidden;
-            border: 2px solid rgba(255, 255, 255, 0.05);
-            display: none; /* Kamera boshida yopiq */
-        }
-
-        canvas { transform: scaleX(-1); width: 100% !important; height: 100% !important; }
-
-        .btn-main {
-            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
-            color: white;
-            border: none;
-            padding: 16px 32px;
-            border-radius: 16px;
-            font-size: 18px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.4);
-            width: 100%;
-        }
-
-        .btn-main:hover { transform: translateY(-2px); box-shadow: 0 20px 25px -5px rgba(99, 102, 241, 0.5); }
-
-        .btn-stop {
-            background: rgba(239, 68, 68, 0.1);
-            color: #f87171;
-            border: 1px solid rgba(239, 68, 68, 0.2);
-            padding: 12px;
-            border-radius: 14px;
-            margin-top: 20px;
-            cursor: pointer;
-            width: 100%;
-            display: none;
-            transition: 0.2s;
-        }
-
-        .btn-stop:hover { background: rgba(239, 68, 68, 0.2); }
-
-        .results-box {
-            margin-top: 30px;
-            text-align: left;
-            display: none;
-        }
-
-        .result-item { margin-bottom: 18px; }
-        .label-group { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; font-weight: 500; color: #fff; }
-        
-        .progress-track {
-            background: rgba(255, 255, 255, 0.05);
-            height: 10px;
-            border-radius: 5px;
-            overflow: hidden;
-        }
-
-        .progress-bar {
-            height: 100%;
-            width: 0%;
-            background: #6366f1;
-            border-radius: 5px;
-            transition: width 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-
-        /* Klass ranglari: Teachable Machine uslubida */
-        .bar-0 { background: #fbbf24; } /* Futbo... */
-        .bar-1 { background: #f87171; } /* Tenis... */
-        .bar-2 { background: #3b82f6; } /* Boshq... */
-
-        #loader-text { margin-top: 15px; color: #a855f7; display: none; font-size: 14px; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ML Tasniflash Demo</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<div class="glass-container">
-    <h1>AI Vision System</h1>
-    <p class="subtitle">Futbol va Tennis koptoklarini aniqlash</p>
+  <div class="container">
+    <h1>📸 Teachable Machine & Webcam AI</h1>
 
-    <div id="webcam-wrapper"></div>
-    <div id="loader-text">Model yuklanmoqda, kuting...</div>
+    <!-- Video oynasi -->
+    <div id="webcam-container"></div>
 
-    <button id="start-btn" class="btn-main" onclick="startSystem()">Kamerani Yoqish</button>
-    <button id="stop-btn" class="btn-stop" onclick="stopSystem()">Kamerani O'chirish</button>
+    <!-- Natija -->
+    <div id="label-container"></div>
 
-    <div id="results" class="results-box">
-        </div>
-</div>
+    <!-- Yuklash tugmasi -->
+    <button id="start-btn">Start Camera</button>
+  </div>
 
-<script>
-    // Sizning modelingiz manzili
-    const MODEL_URL = "https://teachablemachine.withgoogle.com/models/YJ_i_Ueih/";
-    let model, webcam, labelContainer, maxPredictions;
-    let isRunning = false;
+  <!-- TensorFlow.js va Teachable Machine script -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
 
-    async function startSystem() {
-        try {
-            document.getElementById("start-btn").style.display = "none";
-            document.getElementById("loader-text").style.display = "block";
-
-            // Modelni yuklash
-            model = await tmImage.load(MODEL_URL + "model.json", MODEL_URL + "metadata.json");
-            maxPredictions = model.getTotalClasses();
-
-            // Kamerani sozlash
-            webcam = new tmImage.Webcam(300, 300, true);
-            await webcam.setup();
-            await webcam.play();
-            
-            isRunning = true;
-            document.getElementById("loader-text").style.display = "none";
-            document.getElementById("webcam-wrapper").style.display = "block";
-            document.getElementById("stop-btn").style.display = "block";
-            document.getElementById("results").style.display = "block";
-            document.getElementById("webcam-wrapper").appendChild(webcam.canvas);
-
-            // Foizli barlarni yaratish (rasmdagi uchala narsa)
-            labelContainer = document.getElementById("results");
-            labelContainer.innerHTML = "";
-            for (let i = 0; i < maxPredictions; i++) {
-                const item = document.createElement("div");
-                item.className = "result-item";
-                item.innerHTML = 
-                    <div class="label-group">
-                        <span>${model.getClassLabels()[i]}</span>
-                        <span id="percent-${i}">0%</span>
-                    </div>
-                    <div class="progress-track">
-                        <div id="bar-${i}" class="progress-bar bar-${i}"></div>
-                    </div>
-                ;
-                labelContainer.appendChild(item);
-            }
-            window.requestAnimationFrame(loop);
-        } catch (err) {
-            alert("Kamerani yoqib bo'lmadi! Brauzerda ruxsat berilganini tekshiring.");
-            document.getElementById("start-btn").style.display = "block";
-            document.getElementById("loader-text").style.display = "none";
-        }
-    }
-
-    async function loop() {
-        if (!isRunning) return;
-        webcam.update();
-        await predict();
-        window.requestAnimationFrame(loop);
-    }
-
-    async function predict() {
-        const prediction = await model.predict(webcam.canvas);
-        for (let i = 0; i < maxPredictions; i++) {
-            const prob = (prediction[i].probability * 100).toFixed(0);
-            document.getElementById(bar-${i}).style.width = prob + "%";
-            document.getElementById(percent-${i}).innerText = prob + "%";
-        }
-    }
-
-    function stopSystem() {
-        isRunning = false;
-        if (webcam) webcam.stop();
-        document.getElementById("webcam-wrapper").style.display = "none";
-        document.getElementById("results").style.display = "none";
-        document.getElementById("stop-btn").style.display = "none";
-        document.getElementById("start-btn").style.display = "block";
-        document.getElementById("webcam-wrapper").innerHTML = "";
-    }
-</script>
-
+  <script src="script.js"></script>
 </body>
 </html>
